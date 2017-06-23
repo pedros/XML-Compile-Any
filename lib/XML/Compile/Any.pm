@@ -54,7 +54,7 @@ sub make_any_element_reader_handler {
         eval {
             $element = $reader->($node);
         } or Carp::carp "Couldn't parse this:\n$node" and return;
-        return $type, $node;
+        return $type, $node
     }
 }
 

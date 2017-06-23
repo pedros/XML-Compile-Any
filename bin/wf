@@ -8,7 +8,7 @@ use XML::Compile::Any;
 
 use XML::LibXML;
 
-my $oozie = XML::Compile::Any->new();
+my $oozie = XML::Compile::Any->new(glob 't/xsd/*.xsd');
 
 # TODO: this will be dynamic
 # my $element = XML::Compile::Util::pack_type('uri:oozie:coordinator:0.1', 'coordinator-app');
@@ -35,18 +35,18 @@ my $wf = $reader->('/home/psilva/workflow.xml');
 # );
 # my $wf = $reader->('./workflow.json');
 
-# print Dumper $wf;
+#print Dumper $wf;exit;
 
-# # XML writer
-# my $writer = $oozie->compile(
-#     WRITER => $element,
-#     any_element => $oozie->make_any_element_writer_handler,
-#     use_default_namespace => 1,
-# );
-# my $doc = XML::LibXML::Document->new('1.0', 'UTF-8');
-# my $xml = $writer->($doc, $wf);
-# $doc->setDocumentElement($xml);
-# print $doc->serialize(1);
+# XML writer
+my $writer = $oozie->compile(
+    WRITER => $element,
+    any_element => $oozie->make_any_element_writer_handler,
+    use_default_namespace => 1,
+);
+my $doc = XML::LibXML::Document->new('1.0', 'UTF-8');
+my $xml = $writer->($doc, $wf);
+$doc->setDocumentElement($xml);
+print $doc->serialize(1);
 
 # # YAML writer
 # my $writer = $oozie->compile(
@@ -57,11 +57,11 @@ my $wf = $reader->('/home/psilva/workflow.xml');
 # my $yaml = $writer->($wf);
 # print $yaml;
 
-# JSON writer
-my $writer = $oozie->compile(
-    JSONWriter => $element,
-    any_element => $oozie->make_any_element_foreign_writer_handler,
-    use_default_namespace => 1,
-);
-my $json = $writer->($wf);
-print $json;
+# # JSON writer
+# my $writer = $oozie->compile(
+#     JSONWriter => $element,
+#     any_element => $oozie->make_any_element_foreign_writer_handler,
+#     use_default_namespace => 1,
+# );
+# my $json = $writer->($wf);
+# print $json;
