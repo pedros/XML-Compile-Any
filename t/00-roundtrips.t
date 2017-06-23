@@ -42,7 +42,7 @@ for my $element (@elements) {
 
     for my $format (@formats) {
         my ($reader, $writer) = @{translator}{map { "$format$_" } qw/Reader Writer/};
-        print STDERR Dumper( [$reader, $writer] );
+        $reader->
     }
 #     my %structs;
 

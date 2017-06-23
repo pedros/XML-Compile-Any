@@ -6,6 +6,37 @@ use Data::Dumper;
 
 use parent 'XML::Compile::Translate::Reader';
 
+sub register {
+    my ($self) = shift;
+    $self->{ctx} = shift;
+    $self->SUPER::register(@_);
+}
+
+sub make_any_element_foreign_reader_handler {
+    my ($self) = @_;
+
+    return sub {
+        my ($localname, $node, $item) = @_;
+        my $type = $self->{ctx}->get_type($localname);
+
+        return @_ unless $type;
+
+        # ignore types in the same namespace as we're currently reading
+        my ($item_ns) = XML::Compile::Util::unpack_type($item);
+        my ($type_ns) = XML::Compile::Util::unpack_type($type);
+        return @_ unless $item_ns ne $type_ns;
+
+        my $writer = $self->{ctx}->compile(
+            WRITER => $type,
+            use_default_namespace => 1,
+        );
+        my $doc = XML::LibXML::Document->new('1.0', 'UTF-8');
+        my $xml = $writer->($doc, $node);
+
+        return $type, $xml;
+    }
+}
+
 sub compile {
     my ($self, $item, %args) = @_;
     my $handler = $args{any_element} or Carp::croak "need any_element parameter";
