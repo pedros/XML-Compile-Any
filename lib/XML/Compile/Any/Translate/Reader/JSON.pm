@@ -6,7 +6,7 @@ use JSON ();
 
 sub _load {
     my $filename = shift or Carp::croak "Please provide \$filename";
-    open my $fh, '<', $filename or Carp::croak "Cannot open $filename: $!";
+    open my $fh, '<', $filename or return JSON::decode_json($filename);
     local $/ = undef;
     my $contents = <$fh>;
     close $fh;

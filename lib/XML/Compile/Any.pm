@@ -1,4 +1,6 @@
 package XML::Compile::Any;
+our $VERSION = '0.0.1';
+# ABSTRACT: turns baubles into trinkets
 
 use strict;
 use warnings;
@@ -16,12 +18,12 @@ use XML::Compile::Any::Translate::Reader::JSON;
 
 
 sub new {
-    my ($class) = @_;
+    my ($class, @schemas) = @_;
     XML::Compile::Any::Translate::Reader::YAML->register('YAMLReader');
     XML::Compile::Any::Translate::Writer::YAML->register('YAMLWriter');
     XML::Compile::Any::Translate::Reader::JSON->register('JSONReader');
     XML::Compile::Any::Translate::Writer::JSON->register('JSONWriter');
-    return $class->SUPER::new([glob 'xsd/*.xsd']);
+    return $class->SUPER::new(\@schemas);
 }
 
 sub get_type {
