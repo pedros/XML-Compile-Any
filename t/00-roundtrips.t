@@ -1,29 +1,27 @@
-#!perl -T
 # -*- mode: cperl; -*-
-use 5.006;
 use strict;
 use warnings;
+
 use Test::More;
+
+use List::Util qw( shuffle );
 use Data::Dumper;
+$Data::Dumper::Sortkeys  = 1;
+$Data::Dumper::Quotekeys = 0;
+$Data::Dumper::Indent    = 1;
 
 use XML::Compile::Any;
 
-#plan tests => 1;
-
-BEGIN {
-    use_ok( 'XML::Compile::Any' ) || print "Bail out!\n";
-}
-
-my $any = XML::Compile::Any->new(glob 't/xsd/*.xsd');
+my $any = XML::Compile::Any->new( glob 't/xsd/*.xsd' );
 
 sub make_compile {
-    my ($self, $keyword) = @_;
+    my ( $self, $keyword ) = @_;
 
     return sub {
-        my ($element, $handler) = @_;
+        my ( $element, $handler ) = @_;
         return $self->compile(
-            $keyword => $element,
-            any_element => $handler
+            $keyword    => $element,
+            any_element => $handler,
         );
     };
 }
@@ -31,45 +29,23 @@ sub make_compile {
 my @formats = qw( JSON YAML );
 
 my %translator =
-    map +( $_ => make_compile($_) ),
-    map +( "${_}Reader", "${_}Writer" ),
-    @formats;
+  map +( $_ => make_compile( $any => $_ ) ),
+  map +( "${_}Reader", "${_}Writer" ),
+  @formats;
 
-my @elements = map { $_->elements } $any->namespaces->allSchemas;
+my @elements = shuffle grep /coord/,
+ map $_->elements, $any->namespaces->allSchemas;
+
+plan tests => @formats * @elements;
 
 for my $element (@elements) {
-    my $data = eval $any->template(PERL => $element);
-
+    my $data = eval $any->template( PERL => $element );
     for my $format (@formats) {
-        my ($reader, $writer) = @{translator}{map { "$format$_" } qw/Reader Writer/};
-        $reader->
+        my $reader = $translator{"${format}Reader"}
+          ->( $element, $any->make_any_element_foreign_reader_handler );
+        my $writer = $translator{"${format}Writer"}
+          ->( $element, $any->make_any_element_foreign_writer_handler );
+        is_deeply( $reader->( $writer->($data) ), $data, "$format $element" )
+          or diag Dumper([ $reader->( $writer->($data) ), $writer->($data), $data] );
     }
-#     my %structs;
-
-#     for my $writer (sort keys %writers) {
-#         my $make_serializer = $writers{$writer};
-#         my $serializer = $make_serializer->($element, $any->make_any_element_foreign_writer_handler);
-#         $structs{$writer} = $serializer->($data);
-#     }
-
-#     for my $reader (sort keys %readers) {
-#         my $make_deserializer = $readers{$reader};
-#         my $deserializer = $make_deserializer->($element, $any->make_any_element_foreign_reader_handler);
-#         my $deserialized_data = $deserializer->($serialized_data);
-#     }
 }
-
-=pod
-t/xsd
- /xml
- /json
- /yaml
-
-perl data structure => xml => perl datastructure
-perl data structure => yaml => perl datastructure
-perl data structure => json => perl datastructure
-
-=cut
-
-diag( "Testing XML::Compile::Any $XML::Compile::Any::VERSION, Perl $], $^X" );
-done_testing();
