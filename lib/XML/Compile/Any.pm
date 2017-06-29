@@ -66,4 +66,45 @@ sub make_any_element_writer_handler {
     }
 }
 
+sub make_any_element_foreign_reader_handler {
+    my ($self) = @_;
+
+    return sub {
+        my ($localname, $node, $item) = @_;
+        my $type = $self->get_type($localname);
+
+        return @_ unless $type;
+
+        # ignore types in the same namespace as we're currently reading
+        my ($item_ns) = XML::Compile::Util::unpack_type($item);
+        my ($type_ns) = XML::Compile::Util::unpack_type($type);
+        return @_ unless $item_ns ne $type_ns;
+
+        my $writer = $self->compile(
+            WRITER => $type,
+            use_default_namespace => 1,
+        );
+        my $doc = XML::LibXML::Document->new('1.0', 'UTF-8');
+        my $xml = $writer->($doc, $node);
+
+        return $type, $xml;
+    }
+}
+
+sub make_any_element_foreign_writer_handler {
+    my ($self) = @_;
+
+    return sub {
+        my ($type, $node) = @_;
+        my $reader = $self->compile(READER => $type);
+        my ($ns, $localname) = XML::Compile::Util::unpack_type($type);
+        my $element;
+        eval {
+            $element = $reader->($node);
+        } or Carp::carp "Couldn't parse this:\n$node" and return;
+        return $localname, $element;
+    }
+}
+
+
 1;

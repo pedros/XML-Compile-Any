@@ -6,27 +6,6 @@ use Data::Dumper;
 
 use parent 'XML::Compile::Translate::Writer';
 
-sub register {
-    my ($self) = shift;
-    $self->{ctx} = shift;
-    $self->SUPER::register(@_);
-}
-
-sub make_any_element_foreign_writer_handler {
-    my ($self) = @_;
-
-   return sub {
-        my ($type, $node) = @_;
-        my $reader = $self->{ctx}->compile(READER => $type);
-        my ($ns, $localname) = XML::Compile::Util::unpack_type($type);
-        my $element;
-        eval {
-            $element = $reader->($node);
-        } or Carp::carp "Couldn't parse this:\n$node" and return;
-        return $localname, $element;
-    }
-}
-
 sub compile {
     my ($self, $item, %args) = @_;
     my $handler = $args{any_element} or Carp::croak "need any_element parameter";
