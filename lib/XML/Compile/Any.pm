@@ -5,22 +5,19 @@ our $VERSION = '0.0.1';
 use strict;
 use warnings;
 use Carp ();
-use Data::Dumper;
 
 use parent 'XML::Compile::Schema';
 
 use XML::Compile::Util;
 use XML::Compile::Any::Shims;
-use XML::Compile::Any::Translate::Writer::YAML;
-use XML::Compile::Any::Translate::Reader::YAML;
-use XML::Compile::Any::Translate::Writer::JSON;
-use XML::Compile::Any::Translate::Reader::JSON;
 
 use Module::Pluggable search_path => ['XML::Compile::Any::Translate::Reader',
-                                      'XML::Compile::Any::Translate::Writer'];
+                                      'XML::Compile::Any::Translate::Writer'],
+                      require => 1;
 
 sub new {
     my ($class, @schemas) = @_;
+
     my $self = $class->SUPER::new(\@schemas);
     for my $translator ($self->plugins) {
         $translator->register(join '', (split /::/, $translator)[-1,-2]);
