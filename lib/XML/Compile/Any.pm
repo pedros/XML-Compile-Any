@@ -16,14 +16,15 @@ use XML::Compile::Any::Translate::Reader::YAML;
 use XML::Compile::Any::Translate::Writer::JSON;
 use XML::Compile::Any::Translate::Reader::JSON;
 
+use Module::Pluggable search_path => ['XML::Compile::Any::Translate::Reader',
+                                      'XML::Compile::Any::Translate::Writer'];
 
 sub new {
     my ($class, @schemas) = @_;
     my $self = $class->SUPER::new(\@schemas);
-    XML::Compile::Any::Translate::Reader::YAML->register('YAMLReader', $self);
-    XML::Compile::Any::Translate::Writer::YAML->register('YAMLWriter', $self);
-    XML::Compile::Any::Translate::Reader::JSON->register('JSONReader', $self);
-    XML::Compile::Any::Translate::Writer::JSON->register('JSONWriter', $self);
+    for my $translator ($self->plugins) {
+        $translator->register(join '', (split /::/, $translator)[-1,-2]);
+    }
     return $self;
 }
 
