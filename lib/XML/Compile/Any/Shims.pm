@@ -5,6 +5,20 @@ use warnings; no warnings 'redefine';
 use Log::Report qw/xml-compile-oozie/;
 use XML::Compile::Translate::Writer;
 
+=pod
+
+=over
+
+=item B<makeAnyElement>()
+
+Monkey-patch XML::Compile::Translate::Writer::makeAnyElement to
+actually use an any_element CODEREF passed to the compile method in
+XML::Compile::Schema;
+
+=back
+
+=cut
+
 my $old_makeAnyElement = \&XML::Compile::Translate::Writer::makeAnyElement;
 *XML::Compile::Translate::Writer::makeAnyElement = sub {
     my ($self, $path, $handler, $yes, $no, $process, $min, $max) = @_;
@@ -21,5 +35,7 @@ my $old_makeAnyElement = \&XML::Compile::Translate::Writer::makeAnyElement;
         @result;
     }, 'ANY';
 };
+
+
 
 1;

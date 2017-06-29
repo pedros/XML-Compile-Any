@@ -104,5 +104,97 @@ sub make_any_element_foreign_writer_handler {
     }
 }
 
-
 1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+XML::Compile::Any - Compile any XML to any format
+
+=head1 SYNOPSIS
+
+use XML::Compile::Any;
+use XML::LibXML;
+
+my $any = XML::Compile::Any->new(glob 't/xsd/*.xsd');
+
+# XML reader
+my $reader = $any->compile(
+    READER => $element,
+    any_element => $any->make_any_element_reader_handler
+);
+my $wf = $reader->('/home/psilva/workflow.xml');
+
+# XML writer
+my $writer = $any->compile(
+    WRITER => $element,
+    any_element => $any->make_any_element_writer_handler,
+    use_default_namespace => 1,
+);
+my $doc = XML::LibXML::Document->new('1.0', 'UTF-8');
+my $xml = $writer->($doc, $wf);
+$doc->setDocumentElement($xml);
+print $doc->serialize(1);
+
+=head1 DESCRIPTION
+
+This class extends XML::Compile to handle xs:any elements using
+reasonable heuristics and to provide marshalling and unmarshalling to
+and from any number of (pluggable) formats.
+
+=head1 METHODS
+
+=over 4
+
+=item XML::Compile::Any-E<gt>B<new>($xmldata)
+
+Extends L<"new" in XML::Compile::Schema|XML::Compile::Schema/"new">.
+
+=item $any-E<gt>B<get_type>($localname)
+
+Get full namespace-qualified type from $localname.
+
+=item $any-E<gt>B<make_any_element_reader_handler>()
+
+Get CODEREF for handling xs:any elements from a READER.
+
+=item $any-E<gt>B<make_any_element_writer_handler>()
+
+Get CODEREF for handling xs:any elements from a WRITER.
+
+=item $any-E<gt>B<make_any_element_foreign_reader_handler>()
+
+Get CODEREF for handling xs:any elements from a plugin READER.
+
+=item $any-E<gt>B<make_any_element_foreign_writer_handler>()
+
+Get CODEREF for handling xs:any elements from a plugin WRITER.
+
+=back
+
+=head1 TO DO
+
+Possibly add additional translators.
+
+=head1 BUGS
+
+If an Any object is instantiated with conflicting schemas (for
+example, different versions of the same schema), this module will
+ignore any earlier versions whenever possible (during namespace
+inferencing). However, under certain circumstances, it is possible it
+will be confused.
+
+=head1 COPYRIGHT
+
+Same as Perl.
+
+=head1 AUTHORS
+
+Pedro Silva <psilva+git@pedrosilva.pt>
+
+Philippe Bruhat (BooK) <book@cpan.org>
+
+=cut
