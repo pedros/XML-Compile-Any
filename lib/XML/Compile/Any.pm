@@ -5,7 +5,7 @@ our $VERSION = '0.0.1';
 use strict;
 use warnings;
 use Carp ();
-
+use Data::Dumper;
 use parent 'XML::Compile::Schema';
 
 use XML::Compile::Util;
@@ -20,7 +20,7 @@ sub new {
 
     my $self = $class->SUPER::new(\@schemas);
     for my $translator ($self->plugins) {
-        $translator->register(join '', (split /::/, $translator)[-1,-2]);
+        $translator->register(_mod2kw($translator));
     }
     return $self;
 }
@@ -40,6 +40,43 @@ sub get_type {
     }
     @tnses = reverse sort @tnses;
     return $tnses[0] if @tnses;
+}
+
+sub get_elements {
+    my ($self) = @_;
+    my @elements;
+    for my $instance ($self->namespaces->allSchemas) {
+        push @elements, $instance->elements;
+    }
+    return @elements;
+}
+
+sub make_any_element_handler {
+    my ($self, $keyword) = @_;
+
+    my %mod2kw = map {_mod2kw($_) => $_} $self->plugins;
+    if (exists $mod2kw{$keyword}) {
+        my $rw = _mod2rw($mod2kw{$keyword});
+        if ($rw =~ /Reader/) {
+            return $self->make_any_element_foreign_reader_handler;
+        }
+        elsif ($rw =~ /Writer/) {
+            return $self->make_any_element_foreign_writer_handler;
+        }
+        else {
+            die sprintf 'unknown keyword: %s', $keyword;
+        }
+    }
+    elsif ($keyword eq 'READER') {
+        return $self->make_any_element_reader_handler;
+    }
+    elsif ($keyword eq 'WRITER') {
+        return $self->make_any_element_writer_handler;
+    }
+    else {
+        die sprintf 'unknown keyword: %s', $keyword;
+    }
+
 }
 
 sub make_any_element_reader_handler {
@@ -104,6 +141,16 @@ sub make_any_element_foreign_writer_handler {
     }
 }
 
+sub _mod2kw {
+    my ($mod) = @_;
+    return join '', (split /::/, $mod)[-1,-2];
+}
+
+sub _mod2rw {
+    my ($mod) = @_;
+    return (split /::/, $mod)[-2];
+}
+
 1;
 
 __END__
@@ -156,6 +203,14 @@ Extends L<"new" in XML::Compile::Schema|XML::Compile::Schema/"new">.
 =item $any-E<gt>B<get_type>($localname)
 
 Get full namespace-qualified type from $localname.
+
+=item $any-E<gt>B<get_elements>()
+
+Get list of full namespace-qualified elements.
+
+=item $any-E<gt>B<make_any_element_handler>($keyword)
+
+Get appropriate CODEREF for translator registered as $keyword.
 
 =item $any-E<gt>B<make_any_element_reader_handler>()
 

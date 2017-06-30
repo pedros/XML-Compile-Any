@@ -1,0 +1,71 @@
+#!/usr/bin/env perl
+# -*- mode: cperl; -*-
+use strict;
+use warnings;
+use version; our $VERSION = qv('0.0.1');
+use Getopt::Long;
+use Pod::Usage;
+use File::Spec;
+use File::Basename;
+use Carp;
+use Data::Dumper; $Data::Dumper::Sortkeys = 1;
+
+use Log::Report; dispatcher close => 'default';
+use XML::LibXML;
+
+use XML::Compile::Any;
+
+croak 'usage: a2a input.{xml,json,any} schemaglob.xsd output.{xml,json,any}'
+    unless @ARGV == 3;
+
+my ($in, $schema, $out) = @ARGV;
+my $readerkw = ext2fmt($in)->{reader};
+my $any = XML::Compile::Any->new(glob $schema);
+my $writerkw = ext2fmt($out)->{writer};
+
+ELEMENT:
+for my $element ($any->get_elements) {
+
+    eval {
+        my $reader = $any->compile(
+            $readerkw => $element,
+            any_element => $any->make_any_element_handler($readerkw)
+        );
+
+        my $writer = $any->compile(
+            $writerkw => $element,
+            any_element => $any->make_any_element_handler($writerkw)
+        );
+
+        my $serialized = $writer->($reader->($in));
+        open my $outh, '>', $out or croak $1;
+        print $outh $serialized;
+
+    } or next ELEMENT;
+
+}
+
+=head1 NAME
+
+a2a - Convert any format to any format given an XSD
+
+=head1 SYNOPSIS
+
+a2a -i input.xml -o output.json -s schema.xsd
+
+=head1 DESCRIPTION
+
+Given an input XML schema, converts any file to and from a supported format (current XML, JSON and YAML).
+
+=cut
+
+sub ext2fmt {
+    my ($filename) = @_;
+    my %supported = (xml => {reader => 'READER',  writer => 'WRITER'},
+                     json => {reader => 'JSONReader',  writer => 'JSONWriter'},
+                     yaml => {reader => 'YAMLReader',  writer => 'YAMLWriter'});
+
+    my ($name, $path, $ext) = fileparse($filename, keys %supported);
+    croak sprintf 'unsupported format: %s', $filename unless $ext and exists $supported{$ext};
+    return $supported{$ext};
+}
