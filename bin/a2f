@@ -38,9 +38,10 @@ for my $element ($any->get_elements) {
         );
 
         my $serialized = $writer->($reader->($in));
-        open my $outh, '>', $out or croak $1;
+        open my $outh, '>', $out or croak $!;
         print $outh $serialized;
 
+        exit(0);
     } or next ELEMENT;
 
 }
